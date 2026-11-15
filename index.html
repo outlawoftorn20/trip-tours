@@ -63,6 +63,18 @@ pre.log{background:#0a0d11;border-radius:10px;padding:10px;font:11px/1.45 ui-mon
 .tog button{flex:0 0 96px}
 ul.bad{margin:8px 0 0;padding-left:18px;font-size:13px}
 details{margin:10px 0}summary{color:var(--gold);font-weight:600;padding:6px 0}
+a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+.btn.small{min-height:44px;padding:10px 12px;font-size:14px}
+.btn.together{display:block;width:100%;margin-top:12px}
+.spot{background:var(--card);border-radius:var(--r);padding:14px;margin:12px 0;border:2px solid transparent}
+.spot.near{border-color:var(--gold)}
+.spot.here{border-color:var(--ok);background:#1b3326}
+.spot .lead{display:flex;gap:14px;align-items:center;margin:10px 0 6px}
+.spot .arrow{width:84px;height:84px;flex:0 0 84px;color:var(--gold)}
+.spot.here .arrow{color:var(--ok)}
+.spot .arrow svg{width:100%;height:100%;display:block;transition:transform .15s linear}
+.spot .dist{font:700 32px/1.1 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.spot.here .dist{color:var(--ok)}
 </style>
 </head>
 <body>
@@ -72,7 +84,7 @@ details{margin:10px 0}summary{color:var(--gold);font-weight:600;padding:6px 0}
 <script>
 (function(){
 'use strict';
-var VER = '0.2';
+var VER = '0.3';
 var $ = function(s){ return document.querySelector(s); };
 var app = $('#app'), A = $('#a'), pick = $('#pick');
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -89,7 +101,7 @@ function clone(o){ return JSON.parse(JSON.stringify(o)); }
 /* ---------- state ---------- */
 var S = { view:'home', locId:null, sesId:null, cat:null, have:{}, tree:[], tmap:{}, smap:{}, lmap:{}, fp:'', busy:null, msg:null,
           playing:false, ended:false, arm:null, startTarget:null, confirmClear:false, clockTok:0, storage:null, upd:null, lastCheck:0, cancel:false };
-var cfg = Object.assign({ speed:1, auto:false, trim:0, wake:false, base:'' }, jget('tt-cfg', {}));
+var cfg = Object.assign({ speed:1, auto:false, trim:0, wake:false, base:'', geo:false, testSpot:null }, jget('tt-cfg', {}));
 function saveCfg(){ jset('tt-cfg', cfg); }
 var played = jget('tt-played', {});
 var cur = null;   // { t: track, url }
@@ -501,6 +513,126 @@ function wake(){
 }
 function releaseWake(){ try { if (wl && !cfg.wake){ wl.release(); wl = null; } } catch(e){} }
 
+/* ---------- where to stand (optional GPS + compass) ---------- */
+var R_EARTH = 6371000;
+function rad(x){ return x * Math.PI / 180; }
+function deg(x){ return x * 180 / Math.PI; }
+function distM(a, b){
+  var dLa = rad(b.lat - a.lat), dLo = rad(b.lng - a.lng);
+  var q = Math.sin(dLa/2) * Math.sin(dLa/2) + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLo/2) * Math.sin(dLo/2);
+  return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(q)));
+}
+function bearingTo(a, b){
+  var y = Math.sin(rad(b.lng - a.lng)) * Math.cos(rad(b.lat));
+  var x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(rad(b.lng - a.lng));
+  return (deg(Math.atan2(y, x)) + 360) % 360;
+}
+function destPoint(a, brg, m){
+  var d = m / R_EARTH, b = rad(brg), la = rad(a.lat), lo = rad(a.lng);
+  var la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(b));
+  var lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
+  return { lat:deg(la2), lng:((deg(lo2) + 540) % 360) - 180 };
+}
+var WIND = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+function windName(b){ return WIND[Math.round(b / 45) % 8]; }
+function fmtDistM(m){ return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(m < 10000 ? 1 : 0) + ' km'; }
+function okNum(v, lo, hi){ return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; }
+function cleanSpot(sp){
+  if (!sp || !okNum(sp.lat, -90, 90) || !okNum(sp.lng, -180, 180)) return null;
+  var o = { lat:sp.lat, lng:sp.lng, radius:okNum(sp.radius, 5, 1000) ? sp.radius : 30, name:String(sp.name || '').slice(0, 80), look:null };
+  if (sp.look && okNum(sp.look.lat, -90, 90) && okNum(sp.look.lng, -180, 180) && distM(sp, sp.look) > 1) o.look = { lat:sp.look.lat, lng:sp.look.lng };
+  return o;
+}
+// The spot a session uses: a test spot (Test tools) wins, then the session's own spot, then its location's spot.
+function spotFor(s){
+  if (!s) return null;
+  var t = cleanSpot(cfg.testSpot); if (t){ t.test = true; return t; }
+  var l = S.lmap[s.locationId];
+  return cleanSpot(s.spot) || cleanSpot(l && l.spot);
+}
+function mapsUrl(sp){ return 'https://www.google.com/maps/dir/?api=1&destination=' + sp.lat.toFixed(6) + ',' + sp.lng.toFixed(6) + '&travelmode=walking'; }
+function tiltHeading(alpha, beta, gamma){
+  if (Math.abs(beta || 0) < 20) return (360 - (alpha || 0)) % 360;      // phone roughly flat: top edge direction
+  var x = rad(beta || 0), y = rad(gamma || 0), z = rad(alpha || 0);
+  var cY = Math.cos(y), cZ = Math.cos(z), sX = Math.sin(x), sY = Math.sin(y), sZ = Math.sin(z);
+  var Vx = -cZ * sY - sZ * sX * cY, Vy = -sZ * sY + cZ * sX * cY;
+  var h = Math.atan2(Vx, Vy); if (h < 0) h += 2 * Math.PI;
+  return deg(h);
+}
+var G = { watch:null, fix:null, err:'', heading:null, oriOn:false, last:0, smooth:null };
+function spotSession(){ return S.view === 'ses' ? S.smap[S.sesId] : (S.view === 'now' && cur ? S.smap[cur.t.sessionId] : null); }
+function geoWanted(){ return !!(cfg.geo && navigator.geolocation && document.visibilityState === 'visible' && spotFor(spotSession())); }
+function onFix(p){ G.fix = { lat:p.coords.latitude, lng:p.coords.longitude, acc:p.coords.accuracy || 0, at:Date.now() }; G.err = ''; updSpot(); }
+function onGeoErr(e){
+  G.err = e.code === 1 ? 'denied' : e.code === 2 ? 'unavailable' : 'timeout';
+  log('gps error ' + e.code + ' ' + (e.message || ''));
+  if (e.code === 1){ cfg.geo = false; saveCfg(); if (G.watch != null){ navigator.geolocation.clearWatch(G.watch); G.watch = null; } render(); }
+  else updSpot();
+}
+function onOri(e){
+  var h = null;
+  if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
+  else if ((e.type === 'deviceorientationabsolute' || e.absolute === true) && e.alpha != null) h = tiltHeading(e.alpha, e.beta, e.gamma);
+  if (h == null || isNaN(h)) return;
+  var x = Math.cos(rad(h)), y = Math.sin(rad(h));
+  if (G.smooth){ x = G.smooth.x * 0.6 + x * 0.4; y = G.smooth.y * 0.6 + y * 0.4; }
+  G.smooth = { x:x, y:y }; G.heading = (deg(Math.atan2(y, x)) + 360) % 360;
+  var n = performance.now(); if (n - G.last > 80){ G.last = n; updSpot(); }
+}
+function geoSync(){
+  var want = geoWanted();
+  if (want && G.watch == null){
+    G.err = '';
+    try { G.watch = navigator.geolocation.watchPosition(onFix, onGeoErr, { enableHighAccuracy:true, maximumAge:5000, timeout:30000 }); log('gps on'); } catch(e){ G.err = 'unavailable'; }
+  } else if (!want && G.watch != null){ navigator.geolocation.clearWatch(G.watch); G.watch = null; G.fix = null; log('gps off'); }
+  if (want && !G.oriOn){ window.addEventListener('deviceorientationabsolute', onOri, true); window.addEventListener('deviceorientation', onOri, true); G.oriOn = true; }
+  else if (!want && G.oriOn){ window.removeEventListener('deviceorientationabsolute', onOri, true); window.removeEventListener('deviceorientation', onOri, true); G.oriOn = false; G.heading = null; G.smooth = null; }
+}
+function spotHTML(sp){
+  var h = '<section class="spot" id="spot" data-state="off"><div class="big">Where to stand' + (sp.test ? '<span class="chip warn">test spot</span>' : '') + '</div>';
+  if (sp.name) h += '<div class="hint">' + esc(sp.name) + '</div>';
+  if (navigator.geolocation){
+    h += '<div class="lead"><div class="arrow" id="spotarrow" style="display:none"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="4"/><path d="M50 12 L72 62 L50 52 L28 62 Z" fill="currentColor"/></svg></div><div><div class="dist" id="spotdist">—</div><div class="hint" id="spotstat"></div></div></div>';
+  } else h += '<div class="hint">This phone has no location support. Use the map button.</div>';
+  h += '<div class="hint" id="spotface"></div><div class="row">';
+  if (navigator.geolocation) h += '<button class="alt small" data-act="' + (cfg.geo ? 'geooff' : 'geoon') + '">' + (cfg.geo ? 'Stop location' : 'Use my location') + '</button>';
+  h += '<a class="btn alt small" href="' + mapsUrl(sp) + '" target="_blank" rel="noopener">🚶 Open in Google Maps</a></div></section>';
+  return h;
+}
+function updSpot(){
+  var el = $('#spot'); if (!el) return;
+  var sp = spotFor(spotSession()); if (!sp) return;
+  var d = $('#spotdist'), st = $('#spotstat'), ar = $('#spotarrow'), fc = $('#spotface');
+  var faceB = sp.look ? bearingTo(sp, sp.look) : null;
+  var state = 'off', target = null, dtxt = '—', stxt = '';
+  if (G.err === 'denied') stxt = 'Location is blocked. Allow it for Chrome in the phone’s Settings (Apps, Chrome, Permissions, Location), then tap Use my location.';
+  else if (!cfg.geo) stxt = 'Tap “Use my location” to see how far away you are.';
+  else if (!G.fix || Date.now() - G.fix.at > 120000){
+    dtxt = '…'; state = 'wait';
+    stxt = G.err === 'unavailable' ? 'No GPS fix here (indoors?). Use the map button or the listen-at note.' : 'Finding your location…';
+  } else {
+    var dist = distM(G.fix, sp), acc = Math.round(G.fix.acc || 0);
+    var here = dist <= sp.radius, near = !here && dist <= sp.radius + acc;
+    state = here ? 'here' : near ? 'near' : 'far';
+    dtxt = here ? 'You’re here' : fmtDistM(dist);
+    stxt = (here ? 'Close enough to start listening' : near ? 'Very close' : 'to the spot') + (acc ? ' · GPS ±' + acc + ' m' : '');
+    target = here ? faceB : bearingTo(G.fix, sp);
+    if (target != null && G.heading == null) stxt += ' · ' + (here ? 'face ' : 'head ') + windName(target);
+  }
+  if (d) d.textContent = dtxt;
+  if (st) st.textContent = stxt;
+  if (ar){
+    if (target != null && G.heading != null){
+      var rot = (target - G.heading + 360) % 360;
+      ar.style.display = ''; ar.setAttribute('data-rot', String(Math.round(rot)));
+      var sv = ar.firstElementChild; if (sv) sv.style.transform = 'rotate(' + rot + 'deg)';
+    } else { ar.style.display = 'none'; ar.removeAttribute('data-rot'); }
+  }
+  if (fc) fc.textContent = faceB != null ? 'At the spot, face ' + windName(faceB) + ' (' + Math.round(faceB) + '°).' + (G.heading != null ? ' The compass is only approximate.' : '') : '';
+  el.className = 'spot' + (state === 'here' ? ' here' : state === 'near' ? ' near' : '');
+  el.setAttribute('data-state', state);
+}
+
 /* ---------- views ---------- */
 var ICO = {
   play:'<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></svg>',
@@ -526,7 +658,7 @@ function updHTML(){
     if (cell) h += '<div class="hint">You may be on mobile data.</div>';
     h += '<div class="row"><button data-act="download">Download</button></div>';
   } else {
-    h += '<b>Update available</b>New summaries and order. No audio to download.<div class="row"><button data-act="download">Apply</button></div>';
+    h += '<b>Update available</b>New summaries, order or spots. No audio to download.<div class="row"><button data-act="download">Apply</button></div>';
   }
   return h + '</div>';
 }
@@ -578,7 +710,8 @@ function sesHTML(){
   var h = '<button class="back" data-act="loc" data-id="' + esc(l.id) + '">‹ ' + esc(l.title) + '</button><h2>' + esc(s.number) + '. ' + esc(s.title) + '</h2><div class="sub">' + s.tracks.length + ' track' + (s.tracks.length === 1 ? '' : 's') + ' · ' + fmt(sesDur(s)) + toneChip(s) + '</div>' + msgHTML();
   if (s.summary) h += '<p>' + esc(s.summary) + '</p>';
   if (s.listenAt) h += '<div class="listen"><b>Listen at:</b> ' + esc(s.listenAt) + '</div>';
-  h += '<div class="row"><button data-act="play"' + (first ? ' data-id="' + esc(first.id) + '"' : ' disabled') + '>Play session</button></div><h3>Tracks</h3>';
+  var ssp = spotFor(s); if (ssp) h += spotHTML(ssp);
+  h += '<div class="row"><button data-act="play"' + (first ? ' data-id="' + esc(first.id) + '"' : ' disabled') + '>Play session</button><button class="alt" data-act="sestogether"' + (first ? ' data-id="' + esc(first.id) + '"' : ' disabled') + '>Start together</button></div><h3>Tracks</h3>';
   s.tracks.forEach(function(t){
     var st = tstate(t);
     h += '<button class="row2' + (cur && cur.t.id === t.id ? ' cur' : '') + '" data-act="play" data-id="' + esc(t.id) + '"' + (st === 'missing' ? ' disabled' : '') + '><span class="rt"><b>' + esc(t.number) + '. ' + esc(t.title) + '</b>' + (played[t.id] ? '<span class="chip ok">heard</span>' : '') + (st === 'missing' ? '<span class="chip warn">not downloaded</span>' : '') + (st === 'stale' ? '<span class="chip">update pending</span>' : '') + (t.summary ? '<span class="sum">' + esc(t.summary) + '</span>' : '') + '</span><span class="meta">' + fmt(t.dur) + '</span></button>';
@@ -598,8 +731,9 @@ function nowHTML(){
   }
   h += '<input type="range" id="seek" min="0" max="1000" value="0"><div class="time"><span id="tcur">0:00</span><span id="tdur">' + fmt(t.dur) + '</span></div>';
   h += '<div class="ctl"><button class="alt" data-act="prev" aria-label="Previous track">' + ICO.prev + '</button><button class="alt" data-act="back15">−15</button><button class="play" data-act="toggle" id="playbtn" aria-label="Play or pause">' + pp() + '</button><button class="alt" data-act="fwd15">+15</button><button' + (neighbour(1) ? '' : ' disabled') + ' data-act="next" aria-label="Next track">' + ICO.next + '</button></div>';
+  var nsp = spotFor(s); if (nsp) h += spotHTML(nsp);
+  h += '<button class="together" data-act="start30">Start together</button><div class="hint" style="text-align:center;margin-top:4px">Plays at the next :00 or :30 so every phone starts at the same moment.</div>';
   h += '<div class="row"><button class="alt small" data-act="speed">Speed ' + cfg.speed + '×</button><button class="alt small" data-act="auto">Auto-continue: ' + (cfg.auto ? 'on' : 'off') + '</button></div>';
-  h += '<div class="row"><button class="alt" data-act="start30">Start together (next :00 / :30)</button></div>';
   if (s && (s.summary || s.listenAt)) h += '<details><summary>About this session</summary>' + (s.summary ? '<p>' + esc(s.summary) + '</p>' : '') + (s.listenAt ? '<div class="listen"><b>Listen at:</b> ' + esc(s.listenAt) + '</div>' : '') + '</details>';
   h += '<h3>All tracks</h3>';
   if (s) s.tracks.forEach(function(x){
@@ -621,6 +755,8 @@ function toolsHTML(){
   if (cur) h += '<div class="hint" style="margin-top:6px">Track: ' + esc(cur.t.title) + '</div>';
   if (S.arm) h += '<div class="banner">Starting at ' + clock(S.arm.target).slice(0, 8) + '<div class="cd" id="cd">…</div></div>';
   h += '</section>';
+  h += '<section class="card"><div class="big">Spot test</div><div class="hint">Makes a pretend start spot 40 m north of where you are standing, so you can try the distance, arrow and green zone at home. It replaces every session’s real spot until you clear it.</div>';
+  h += '<div class="hint" style="margin-top:6px">' + (cfg.testSpot ? 'Test spot is ON.' : 'Test spot is off.') + '</div><div class="row"><button class="alt small" data-act="testspot">Make test spot</button><button class="alt small" data-act="testclear">Clear test spot</button></div></section>';
   h += '<section class="card"><div class="tog" style="margin-top:0"><span>Keep screen on while playing</span><button class="alt small" data-act="wake">' + (cfg.wake ? 'On' : 'Off') + '</button></div>';
   h += '<div class="hint" style="margin-top:10px">Storage: ' + (st ? fmtMB(st.usage) + ' used of ' + fmtMB(st.quota) + ' · persistent: ' + (st.persisted ? 'yes' : 'no') : 'checking…') + '</div>';
   h += '<div class="hint">Network: ' + (navigator.onLine ? 'online' : 'offline') + ' · installed app: ' + (matchMedia('(display-mode: standalone)').matches ? 'yes' : 'no (browser tab)') + '</div></section>';
@@ -641,6 +777,7 @@ function render(){
   updProgress();
   if (v === 'tools'){ storageInfo(); var tok = ++S.clockTok; (function loop(){ if (S.clockTok !== tok || S.view !== 'tools') return; var c = $('#clock'); if (c) c.textContent = clock(Date.now()); requestAnimationFrame(loop); })(); var lb = $('#logbox'); if (lb) lb.scrollTop = lb.scrollHeight; }
   if (S.arm) updArm(S.arm.target - Date.now());
+  geoSync(); updSpot();
 }
 function syncPlay(){
   var b = $('#playbtn'); if (b) b.innerHTML = pp();
@@ -697,6 +834,20 @@ app.addEventListener('click', function(e){
   else if (act === 'trim'){ cfg.trim = Math.max(-1000, Math.min(1000, cfg.trim + Number(el.dataset.d))); saveCfg(); var tv = $('#trimv'); if (tv) tv.textContent = cfg.trim + ' ms'; }
   else if (act === 'savebase'){ var bi = $('#baseinp'); cfg.base = bi ? bi.value.trim() : ''; saveCfg(); S.upd = null; S.msg = { cls:'good', text:'Address saved.' }; log('content address: ' + contentBase()); render(); }
   else if (act === 'wake'){ cfg.wake = !cfg.wake; saveCfg(); if (cfg.wake) wake(); else if (wl){ wl.release(); wl = null; } render(); }
+  else if (act === 'sestogether'){ if (!id) return; S.view = 'now'; S.msg = null; load(id, { autoplay:false }).then(function(){ startAt(30); }); }
+  else if (act === 'geoon'){ cfg.geo = true; saveCfg(); G.err = ''; G.fix = null; log('location turned on'); render(); }
+  else if (act === 'geooff'){ cfg.geo = false; saveCfg(); G.fix = null; render(); }
+  else if (act === 'testclear'){ cfg.testSpot = null; saveCfg(); S.msg = { text:'Test spot cleared.' }; render(); }
+  else if (act === 'testspot'){
+    if (!navigator.geolocation){ S.msg = { cls:'err', text:'This phone has no location support.' }; render(); return; }
+    S.msg = { text:'Getting your location…' }; render();
+    navigator.geolocation.getCurrentPosition(function(p){
+      var me = { lat:p.coords.latitude, lng:p.coords.longitude }, stand = destPoint(me, 0, 40), look = destPoint(stand, 90, 100);
+      cfg.testSpot = { lat:stand.lat, lng:stand.lng, radius:15, name:'Test spot, 40 m north of where you tapped', look:look }; saveCfg();
+      log('test spot set near ' + me.lat.toFixed(5) + ',' + me.lng.toFixed(5));
+      S.msg = { cls:'good', text:'Test spot made. Open any session and tap Use my location, then walk 40 m north.' }; render();
+    }, function(err){ S.msg = { cls:'err', text:err.code === 1 ? 'Location is blocked for this app. Allow it in the phone’s Settings, then try again.' : 'Could not get your location yet. Try outside.' }; render(); }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+  }
   else if (act === 'copylog'){
     var txt = logbuf.join('\n');
     (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ S.msg = { cls:'good', text:'Log copied. Paste it into a chat.' }; render(); }, function(){ var r = document.createRange(); r.selectNodeContents($('#logbox')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); S.msg = { text:'Log selected. Long-press to copy.' }; });
@@ -718,7 +869,8 @@ log('app opened v' + VER + (matchMedia('(display-mode: standalone)').matches ? '
 render();
 refreshState().then(function(){ render(); if (navigator.onLine) return checkUpdates(false); })
   .catch(function(e){ S.msg = { cls:'err', text:'Storage problem: ' + e.message }; render(); });
-window.__tt = { S:S, A:A, cfg:cfg, load:load, checkUpdates:checkUpdates };
+document.addEventListener('visibilitychange', function(){ geoSync(); });
+window.__tt = { S:S, A:A, cfg:cfg, load:load, checkUpdates:checkUpdates, G:G, spotFor:spotFor, geoSync:geoSync, tiltHeading:tiltHeading, bearingTo:bearingTo, distM:distM };
 })();
 </script>
 </body>
