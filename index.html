@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1318">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Trip Tours</title>
+<style>
+:root{--bg:#0f1318;--card:#1a212a;--card2:#232c37;--tx:#e9edf1;--dim:#93a0ae;--gold:#f2b84b;--ok:#5fd08a;--bad:#ff7a6b;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Roboto,sans-serif}
+body{padding:calc(12px + env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto;user-select:none;-webkit-user-select:none}
+h1{margin:4px 0 0;font:700 28px/1.1 Georgia,'Playfair Display',serif;letter-spacing:.2px}
+h2{margin:6px 0 2px;font:700 22px/1.2 Georgia,serif}
+h3{margin:18px 2px 6px;font-size:13px;letter-spacing:.8px;text-transform:uppercase;color:var(--gold)}
+p{margin:8px 0}
+.sub,.hint,.meta{color:var(--dim);font-size:13px}
+.card{background:var(--card);border-radius:var(--r);padding:14px;margin:12px 0}
+.big{font-size:20px;font-weight:600;margin-bottom:4px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.row{display:flex;gap:10px;margin-top:12px}
+.row>*{flex:1;min-width:0}
+button,.btn{font:600 16px system-ui,sans-serif;color:#1b1405;background:var(--gold);border:0;border-radius:12px;padding:14px 12px;min-height:52px;cursor:pointer}
+button.alt,.btn.alt{background:var(--card2);color:var(--tx)}
+button.small{min-height:44px;padding:10px 12px;font-size:14px}
+button:disabled{opacity:.4}
+button.row2{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);color:var(--tx);font-weight:500;margin:6px 0;border-radius:12px;padding:14px}
+button.row2.cur{outline:2px solid var(--gold)}
+button.row2 .meta{white-space:nowrap;text-align:right}
+button.row2 .rt{flex:1;min-width:0;display:block}
+button.row2 .rt b{font-weight:600}
+.sum{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--dim);font-size:13px;margin-top:3px;font-weight:400}
+.note{background:#2b3440;border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px}
+.note.err{background:#4a2420}.note.good{background:#1f3b2b}
+.back{background:none;color:var(--gold);padding:6px 0;min-height:40px;font-weight:600}
+.time{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;color:var(--dim);font-size:14px}
+input[type=range]{width:100%;height:36px;accent-color:var(--gold)}
+input[type=text]{width:100%;background:#0a0d11;color:var(--tx);border:1px solid #38434f;border-radius:10px;padding:10px;font:14px ui-monospace,Menlo,monospace;user-select:text;-webkit-user-select:text}
+.ctl{display:flex;gap:8px;align-items:center;justify-content:center;margin:10px 0}
+.ctl button{min-width:58px;padding:12px 8px;display:flex;align-items:center;justify-content:center}
+.ctl .play{flex:1;min-height:68px}
+.chip{display:inline-block;background:var(--card2);color:var(--dim);border-radius:99px;padding:2px 9px;font-size:12px;margin-left:6px;vertical-align:middle;font-weight:500}
+.chip.ok{background:#1f3b2b;color:var(--ok)}.chip.warn{background:#4a2420;color:var(--bad)}.chip.sombre{background:#33293f;color:#c9b3ff}
+.banner{background:var(--gold);color:#1b1405;border-radius:var(--r);padding:14px;margin:12px 0;font-weight:700;text-align:center}
+.banner .cd{font-size:44px;font-variant-numeric:tabular-nums;line-height:1.1}
+.upd{background:#2a2412;border:2px solid var(--gold);border-radius:var(--r);padding:14px;margin:12px 0}
+.upd b{display:block;margin-bottom:4px}
+.fin{background:#1f3b2b;border:2px solid var(--ok);border-radius:var(--r);padding:12px;margin:12px 0;text-align:center}
+.listen{background:var(--card2);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:14px}
+.mini{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:540px;margin:0 auto;background:var(--card2);border:1px solid #38434f;border-radius:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 6px 24px #0008}
+.mini b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
+.mini button{display:flex;align-items:center;justify-content:center;min-width:52px}
+.clock{font:700 38px/1.1 ui-monospace,Menlo,monospace;text-align:center;letter-spacing:1px;color:var(--gold);margin:6px 0}
+pre.log{background:#0a0d11;border-radius:10px;padding:10px;font:11px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;max-height:300px;overflow:auto;user-select:text;-webkit-user-select:text}
+.overlay{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:9;padding:24px}
+.overlay .card{width:100%;max-width:400px;margin:0}
+.bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;margin-top:12px}
+.bar>i{display:block;height:100%;width:0;background:var(--gold)}
+.tog{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px}
+.tog button{flex:0 0 96px}
+ul.bad{margin:8px 0 0;padding-left:18px;font-size:13px}
+details{margin:10px 0}summary{color:var(--gold);font-weight:600;padding:6px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<audio id="a" preload="auto" playsinline></audio>
+<input type="file" id="pick" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+<script>
+(function(){
+'use strict';
+var VER = '0.2';
+var $ = function(s){ return document.querySelector(s); };
+var app = $('#app'), A = $('#a'), pick = $('#pick');
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmt(s){ s = Math.max(0, Math.round(s || 0)); var m = Math.floor(s/60), r = s % 60; return m + ':' + String(r).padStart(2,'0'); }
+function fmtMB(b){ return (b/1048576).toFixed(b < 10485760 ? 1 : 0) + ' MB'; }
+function p2(n){ return String(n).padStart(2,'0'); }
+function clock(ms){ var d = new Date(ms); return p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0'); }
+function when(ms){ var d = new Date(ms); return d.getDate()+'/'+(d.getMonth()+1)+' '+p2(d.getHours())+':'+p2(d.getMinutes()); }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function jget(k, d){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+function jset(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ---------- state ---------- */
+var S = { view:'home', locId:null, sesId:null, cat:null, have:{}, tree:[], tmap:{}, smap:{}, lmap:{}, fp:'', busy:null, msg:null,
+          playing:false, ended:false, arm:null, startTarget:null, confirmClear:false, clockTok:0, storage:null, upd:null, lastCheck:0, cancel:false };
+var cfg = Object.assign({ speed:1, auto:false, trim:0, wake:false, base:'' }, jget('tt-cfg', {}));
+function saveCfg(){ jset('tt-cfg', cfg); }
+var played = jget('tt-played', {});
+var cur = null;   // { t: track, url }
+
+/* ---------- log ---------- */
+var logbuf = jget('tt-log', []);
+function log(m){
+  var d = new Date();
+  logbuf.push(p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0')+' '+m);
+  if (logbuf.length > 400) logbuf = logbuf.slice(-400);
+  jset('tt-log', logbuf);
+  var el = $('#logbox'); if (el){ el.textContent = logbuf.slice(-80).join('\n'); el.scrollTop = el.scrollHeight; }
+}
+
+/* ---------- IndexedDB: audio blobs, per-track records, catalogue ---------- */
+var dbp;
+function db(){
+  if (dbp) return dbp;
+  dbp = new Promise(function(res, rej){
+    var r = indexedDB.open('trip-tours-v1', 2);
+    r.onupgradeneeded = function(){
+      var d = r.result;
+      if (!d.objectStoreNames.contains('index')) d.createObjectStore('index', { keyPath:'id' });
+      if (!d.objectStoreNames.contains('blobs')) d.createObjectStore('blobs');
+      if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta');
+    };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+  return dbp;
+}
+function rq(r){ return new Promise(function(res, rej){ r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); }; }); }
+function txdone(t){ return new Promise(function(res, rej){ t.oncomplete = res; t.onerror = function(){ rej(t.error); }; t.onabort = function(){ rej(t.error || new Error('aborted')); }; }); }
+function idbPut(rec, blob){ return db().then(function(d){ var t = d.transaction(['index','blobs'], 'readwrite'); t.objectStore('blobs').put(blob, rec.id); t.objectStore('index').put(rec); return txdone(t); }); }
+function idbDel(ids){ return db().then(function(d){ var t = d.transaction(['index','blobs'], 'readwrite'); ids.forEach(function(id){ t.objectStore('blobs').delete(id); t.objectStore('index').delete(id); }); return txdone(t); }); }
+function idbBlob(id){ return db().then(function(d){ return rq(d.transaction('blobs').objectStore('blobs').get(id)); }); }
+function idbHave(){ return db().then(function(d){ return rq(d.transaction('index').objectStore('index').getAll()); }).then(function(a){ var m = {}; a.forEach(function(r){ m[r.id] = { sha256:r.sha256, size:r.size || 0 }; }); return m; }); }
+function metaGet(k){ return db().then(function(d){ return rq(d.transaction('meta').objectStore('meta').get(k)); }); }
+function metaPut(k, v){ return db().then(function(d){ var t = d.transaction('meta', 'readwrite'); t.objectStore('meta').put(v, k); return txdone(t); }); }
+function idbClearAll(){ return db().then(function(d){ var t = d.transaction(['index','blobs','meta'], 'readwrite'); t.objectStore('index').clear(); t.objectStore('blobs').clear(); t.objectStore('meta').clear(); return txdone(t); }); }
+
+/* ---------- catalogue ---------- */
+function normCat(man){
+  if (!man || !man.tracks) throw new Error('Not a Trip Tours catalogue');
+  if (man.version >= 2) return { version:2, catalogueVersion:man.catalogueVersion || 0, pack:man.pack || '', built:man.built || '',
+                                 locations:man.locations || [], sessions:man.sessions || [], tracks:man.tracks };
+  // version 1 (test pack): site -> location with one session
+  var locs = {}, sess = [], tracks = [];
+  man.tracks.forEach(function(t){
+    if (!locs[t.siteId]){
+      locs[t.siteId] = { id:t.siteId, title:t.siteTitle || t.siteId, city:t.city || '', day:t.day || 0, order:t.siteOrder || 0, summary:'' };
+      sess.push({ id:t.siteId + '-1', locationId:t.siteId, number:1, title:t.siteTitle || t.siteId, summary:'', listenAt:'', tone:t.tone || 'fun', order:1 });
+    }
+    tracks.push({ id:t.id, sessionId:t.siteId + '-1', number:t.order || 1, title:t.title, summary:'', file:t.file, dur:t.dur, sha256:t.sha256, size:t.size || 0 });
+  });
+  return { version:2, catalogueVersion:0, pack:man.pack || '', built:man.built || '', locations:Object.keys(locs).map(function(k){ return locs[k]; }), sessions:sess, tracks:tracks };
+}
+function buildTree(){
+  var c = S.cat; S.tree = []; S.tmap = {}; S.smap = {}; S.lmap = {};
+  if (!c) return;
+  var byS = {}, byL = {};
+  c.tracks.forEach(function(t){ S.tmap[t.id] = t; (byS[t.sessionId] = byS[t.sessionId] || []).push(t); });
+  c.sessions.forEach(function(s){
+    s.tracks = (byS[s.id] || []).sort(function(a, b){ return (a.number||0) - (b.number||0); });
+    S.smap[s.id] = s; (byL[s.locationId] = byL[s.locationId] || []).push(s);
+  });
+  var locs = c.locations.slice().sort(function(a, b){ return (a.day||0) - (b.day||0) || (a.order||0) - (b.order||0) || String(a.title).localeCompare(b.title); });
+  locs.forEach(function(l){
+    l.sessions = (byL[l.id] || []).sort(function(a, b){ return (a.order||0) - (b.order||0) || (a.number||0) - (b.number||0); });
+    S.lmap[l.id] = l;
+  });
+  S.tree = locs;
+}
+function tstate(t){ var h = S.have[t.id]; return !h ? 'missing' : (h.sha256 === t.sha256 ? 'ready' : 'stale'); }
+function playable(t){ return !!S.have[t.id]; }
+function sesDur(s){ return s.tracks.reduce(function(a, t){ return a + (t.dur || 0); }, 0); }
+function sesReady(s){ return s.tracks.filter(function(t){ return tstate(t) === 'ready'; }).length; }
+function sesPlayed(s){ return s.tracks.length > 0 && s.tracks.every(function(t){ return played[t.id]; }); }
+function locDur(l){ return l.sessions.reduce(function(a, s){ return a + sesDur(s); }, 0); }
+function allTracks(){ return S.cat ? S.cat.tracks : []; }
+function sha256(buf){
+  return crypto.subtle.digest('SHA-256', buf).then(function(h){
+    return Array.prototype.map.call(new Uint8Array(h), function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  });
+}
+async function fingerprint(){
+  if (!S.cat) return '';
+  var parts = S.cat.tracks.filter(function(t){ return tstate(t) === 'ready'; }).map(function(t){ return t.id + ':' + t.sha256; }).sort();
+  return (await sha256(new TextEncoder().encode(S.cat.catalogueVersion + '|' + parts.join(',')))).slice(0, 6);
+}
+async function refreshState(){
+  S.have = await idbHave();
+  var raw = await metaGet('catalogue');
+  S.cat = raw ? clone(raw) : null;
+  buildTree();
+  S.fp = await fingerprint();
+}
+function readyCount(){ return allTracks().filter(function(t){ return tstate(t) === 'ready'; }).length; }
+function readyBytes(){ return allTracks().reduce(function(a, t){ return a + (tstate(t) === 'ready' ? (S.have[t.id].size || t.size || 0) : 0); }, 0); }
+
+/* ---------- ZIP reader (stored or deflate; no zip64) ---------- */
+function u8str(buf, off, len){ return new TextDecoder().decode(new Uint8Array(buf, off, len)); }
+function readZip(file){
+  var size = file.size, tailLen = Math.min(size, 65557);
+  return file.slice(size - tailLen, size).arrayBuffer().then(function(tb){
+    var tv = new DataView(tb), i = tb.byteLength - 22;
+    for (; i >= 0; i--) if (tv.getUint32(i, true) === 0x06054b50) break;
+    if (i < 0) throw new Error('This is not a zip file');
+    var total = tv.getUint16(i+10, true), cdSize = tv.getUint32(i+12, true), cdOff = tv.getUint32(i+16, true);
+    if (cdOff === 0xffffffff) throw new Error('Zip64 packs are not supported');
+    return file.slice(cdOff, cdOff + cdSize).arrayBuffer().then(function(cb){
+      var cv = new DataView(cb), p = 0, entries = [];
+      for (var n = 0; n < total; n++){
+        if (cv.getUint32(p, true) !== 0x02014b50) throw new Error('Damaged zip directory');
+        var nlen = cv.getUint16(p+28, true), xlen = cv.getUint16(p+30, true), clen = cv.getUint16(p+32, true);
+        entries.push({ name:u8str(cb, p+46, nlen), method:cv.getUint16(p+10, true), csize:cv.getUint32(p+20, true), usize:cv.getUint32(p+24, true), lho:cv.getUint32(p+42, true) });
+        p += 46 + nlen + xlen + clen;
+      }
+      return entries;
+    });
+  });
+}
+function zipBlob(file, e){
+  return file.slice(e.lho, e.lho + 30).arrayBuffer().then(function(hb){
+    var hv = new DataView(hb);
+    if (hv.getUint32(0, true) !== 0x04034b50) throw new Error('Damaged zip entry: ' + e.name);
+    var start = e.lho + 30 + hv.getUint16(26, true) + hv.getUint16(28, true);
+    var raw = file.slice(start, start + e.csize);
+    if (e.method === 0) return raw;
+    if (e.method === 8 && typeof DecompressionStream !== 'undefined')
+      return new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+    throw new Error('Unsupported zip compression in ' + e.name);
+  });
+}
+
+/* ---------- progress overlay ---------- */
+function progress(n){
+  var b = S.busy; if (!b) return;
+  b.n = n;
+  var frac = b.totalBytes ? b.bytes / b.totalBytes : (b.total ? n / b.total : 0);
+  var bar = $('#busybar'); if (bar) bar.style.width = Math.min(100, 100 * frac) + '%';
+  var t = $('#busytxt'); if (t) t.textContent = busyText();
+}
+function busyText(){ var b = S.busy; return b.n + ' / ' + b.total + (b.totalBytes ? ' · ' + fmtMB(b.bytes) + ' of ' + fmtMB(b.totalBytes) : ''); }
+
+/* ---------- import a pack (zip) ---------- */
+async function importZip(file){
+  S.msg = null; S.busy = { msg:'Reading pack…', n:0, total:0 }; render();
+  log('import start: ' + file.name + ' ' + fmtMB(file.size));
+  try {
+    var entries = await readZip(file);
+    var me = entries.filter(function(e){ return /(^|\/)manifest\.json$/.test(e.name); })[0];
+    if (!me) throw new Error('No manifest.json in this zip');
+    var man = normCat(JSON.parse(await (await zipBlob(file, me)).text()));
+    var byName = {}; entries.forEach(function(e){ byName[e.name] = e; });
+    S.busy = { msg:'Importing', n:0, total:man.tracks.length, bytes:0, totalBytes:0 }; render();
+    var added = 0, skipped = 0, bad = [], n = 0;
+    for (var k = 0; k < man.tracks.length; k++){
+      var t = man.tracks[k], e = byName[t.file];
+      if (!e){ n++; progress(n); continue; }          // a delta pack may carry only some audio
+      if (S.have[t.id] && S.have[t.id].sha256 === t.sha256){ skipped++; progress(++n); continue; }
+      var buf = await (await zipBlob(file, e)).arrayBuffer();
+      if (await sha256(buf) !== t.sha256){ bad.push(t.id + ' ' + (t.title || '') + ': checksum mismatch'); progress(++n); continue; }
+      await idbPut({ id:t.id, sha256:t.sha256, size:buf.byteLength, at:Date.now() }, new Blob([buf], { type:'audio/mpeg' }));
+      S.have[t.id] = { sha256:t.sha256, size:buf.byteLength };
+      added++; progress(++n);
+    }
+    var newer = !S.cat || (man.catalogueVersion || 0) >= (S.cat.catalogueVersion || 0);
+    if (newer) await metaPut('catalogue', clone(man));
+    await refreshState();
+    var persisted = null;
+    try { if (navigator.storage && navigator.storage.persist) persisted = await navigator.storage.persist(); } catch(_){}
+    log('import done: added ' + added + ', unchanged ' + skipped + ', problems ' + bad.length + ', catalogue ' + (newer ? 'replaced' : 'kept (pack was older)') + ', persistent: ' + persisted);
+    S.msg = bad.length
+      ? { cls:'err', text:'Imported ' + added + ', but ' + bad.length + ' problem(s): ' + bad.slice(0,3).join('; ') }
+      : { cls:'good', text:'Imported ' + added + ' track(s)' + (skipped ? ', ' + skipped + ' already there' : '') + (newer ? '' : '. This pack\'s catalogue was older, so the phone kept its own') + '.' };
+  } catch(err){
+    log('import FAILED: ' + err.message);
+    S.msg = { cls:'err', text:'Import failed: ' + err.message };
+  }
+  S.busy = null; render();
+}
+
+/* ---------- hosted content: check, download, apply ---------- */
+function contentBase(){
+  var b = (cfg.base || '').trim();
+  try { var h = new URL(b || '../trip-tours-audio/', location.href).href; return h.endsWith('/') ? h : h + '/'; }
+  catch(e){ return new URL('../trip-tours-audio/', location.href).href; }
+}
+function planDownload(man){
+  var need = man.tracks.filter(function(t){ var h = S.have[t.id]; return !h || h.sha256 !== t.sha256; });
+  var bytes = need.reduce(function(a, t){ return a + (t.size || 0); }, 0);
+  return { need:need, bytes:bytes };
+}
+async function checkUpdates(manual){
+  if (S.busy) return;
+  S.lastCheck = Date.now();
+  if (!navigator.onLine){ S.upd = { state:'error', msg:'No internet right now' }; if (manual){ S.msg = { cls:'err', text:'No internet right now.' }; render(); } return; }
+  if (manual){ S.msg = { text:'Checking…' }; render(); }
+  try {
+    var r = await fetch(contentBase() + 'catalogue.json?t=' + Date.now(), { cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var man = normCat(await r.json());
+    var plan = planDownload(man);
+    var textNew = !S.cat || S.cat.catalogueVersion !== man.catalogueVersion;
+    S.upd = { state:'ready', man:man, need:plan.need, bytes:plan.bytes, textNew:textNew, avail: plan.need.length > 0 || textNew, at:Date.now() };
+    log('update check: catalogue ' + man.catalogueVersion + ' (phone has ' + (S.cat ? S.cat.catalogueVersion : 'none') + '), ' + plan.need.length + ' track(s) to fetch, ' + fmtMB(plan.bytes));
+    if (manual) S.msg = S.upd.avail ? null : { cls:'good', text:'Up to date.' };
+  } catch(e){
+    S.upd = { state:'error', msg:e.message };
+    log('update check failed: ' + e.message);
+    if (manual) S.msg = { cls:'err', text:'Could not reach the library (' + e.message + '). Check Test tools > content address.' };
+  }
+  render();
+}
+async function download(){
+  var u = S.upd; if (!u || u.state !== 'ready') return;
+  var man = u.man, plan = planDownload(man), need = plan.need;
+  S.msg = null; S.cancel = false;
+  await metaPut('catalogue', clone(man));         // text applies even if audio is interrupted
+  S.cat = clone(man); buildTree();
+  S.busy = { msg: need.length ? 'Downloading' : 'Applying update', n:0, total:need.length, bytes:0, totalBytes:plan.bytes, cancellable:true }; render();
+  wake();
+  var failed = [], idx = 0, done = 0, base = contentBase();
+  async function one(t){
+    var url = new URL(t.file, base).href;
+    for (var a = 1; a <= 3; a++){
+      try {
+        var r = await fetch(url, { cache:'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var buf = await r.arrayBuffer();
+        if (await sha256(buf) !== t.sha256) throw new Error('checksum mismatch');
+        await idbPut({ id:t.id, sha256:t.sha256, size:buf.byteLength, at:Date.now() }, new Blob([buf], { type:'audio/mpeg' }));
+        S.have[t.id] = { sha256:t.sha256, size:buf.byteLength };
+        S.busy.bytes += buf.byteLength;
+        return;
+      } catch(e){
+        if (a === 3){ failed.push(t.id + ' ' + (t.title || '') + ': ' + e.message); log('download failed ' + t.id + ': ' + e.message); return; }
+        await sleep(500 * a);
+      }
+    }
+  }
+  async function worker(){ while (!S.cancel){ var i = idx++; if (i >= need.length) return; await one(need[i]); done++; progress(done); } }
+  await Promise.all([worker(), worker()]);
+  var cancelled = S.cancel;
+  if (!cancelled && failed.length === 0){
+    var keep = {}; man.tracks.forEach(function(t){ keep[t.id] = 1; });
+    var drop = Object.keys(S.have).filter(function(id){ return !keep[id]; });
+    if (drop.length){ await idbDel(drop); drop.forEach(function(id){ delete S.have[id]; }); log('tidied ' + drop.length + ' track(s) no longer in the catalogue'); }
+  }
+  await refreshState();
+  var rest = planDownload(man);
+  S.upd = { state:'ready', man:man, need:rest.need, bytes:rest.bytes, textNew:false, avail:rest.need.length > 0, at:Date.now() };
+  S.busy = null; releaseWake();
+  var persisted = null; try { if (navigator.storage && navigator.storage.persist) persisted = await navigator.storage.persist(); } catch(_){}
+  log('download ' + (cancelled ? 'paused' : 'finished') + ': ' + done + '/' + need.length + ' track(s), failed ' + failed.length + ', persistent: ' + persisted);
+  if (cancelled) S.msg = { text:'Paused. ' + rest.need.length + ' track(s) still to download. Tap Download to continue.' };
+  else if (failed.length) S.msg = { cls:'err', text:failed.length + ' track(s) failed: ' + failed.slice(0, 2).join('; ') + '. Tap Download to try again.' };
+  else S.msg = { cls:'good', text:need.length ? 'Downloaded ' + need.length + ' track(s). Library ' + S.fp + ' is complete.' : 'Update applied.' };
+  render();
+}
+
+/* ---------- verify ---------- */
+function probeDuration(blob){
+  return new Promise(function(res, rej){
+    var a = new Audio(), u = URL.createObjectURL(blob), to;
+    function done(v, e){ clearTimeout(to); a.onloadedmetadata = a.onerror = null; a.removeAttribute('src'); try { a.load(); } catch(_){} URL.revokeObjectURL(u); e ? rej(e) : res(v); }
+    to = setTimeout(function(){ done(0, new Error('decode timeout')); }, 8000);
+    a.preload = 'metadata';
+    a.onloadedmetadata = function(){ done(a.duration); };
+    a.onerror = function(){ done(0, new Error('cannot decode')); };
+    a.src = u;
+  });
+}
+async function verifyAll(){
+  var list = allTracks().filter(playable);
+  S.msg = null; S.busy = { msg:'Verifying', n:0, total:list.length }; render();
+  var bad = [], n = 0;
+  for (var i = 0; i < list.length; i++){
+    var t = list[i];
+    try {
+      var b = await idbBlob(t.id);
+      if (!b) throw new Error('missing from storage');
+      if (await sha256(await b.arrayBuffer()) !== S.have[t.id].sha256) throw new Error('checksum mismatch');
+      var d = await probeDuration(b);
+      if (t.dur && Math.abs(d - t.dur) > 2) throw new Error('plays ' + d.toFixed(1) + 's, expected ' + t.dur + 's');
+    } catch(e){ bad.push(t.id + ' ' + (t.title || '') + ': ' + e.message); }
+    progress(++n);
+  }
+  var missing = allTracks().length - list.length;
+  var r = { at:Date.now(), ok:list.length - bad.length, total:allTracks().length, bad:bad, fp:S.fp, missing:missing };
+  jset('tt-verify', r);
+  log('verify: ' + r.ok + '/' + r.total + (missing ? ' (' + missing + ' not downloaded)' : '') + (bad.length ? ' PROBLEMS: ' + bad.join(' | ') : ' all ok'));
+  S.busy = null; render();
+}
+
+/* ---------- player ---------- */
+function sibling(t, d){
+  var s = S.smap[t.sessionId]; if (!s) return null;
+  var i = s.tracks.map(function(x){ return x.id; }).indexOf(t.id), x = s.tracks[i + d];
+  return x && playable(x) ? x.id : null;
+}
+function neighbour(d){ return cur ? sibling(cur.t, d) : null; }
+async function load(id, opts){
+  opts = opts || {};
+  var t = S.tmap[id]; if (!t) return;
+  var blob = await idbBlob(id);
+  if (!blob){ S.msg = { cls:'err', text:'That track has not been downloaded yet.' }; render(); return; }
+  if (cur && cur.url) URL.revokeObjectURL(cur.url);
+  var url = URL.createObjectURL(blob);
+  cur = { t:t, url:url, marked:false }; S.ended = false; S.arm = null; clearInterval(S.armTimer);
+  A.src = url; A.defaultPlaybackRate = cfg.speed; A.playbackRate = cfg.speed;
+  if (opts.pos) A.addEventListener('loadedmetadata', function(){ A.currentTime = opts.pos; }, { once:true });
+  session(t);
+  if (opts.autoplay !== false){ try { await A.play(); } catch(e){ log('play() rejected: ' + e.name); } }
+  if (cfg.wake) wake();
+  render();
+}
+function toggle(){ if (!cur) return; if (A.paused) A.play().catch(function(e){ log('play() rejected: ' + e.name); }); else A.pause(); }
+function skip(d){ if (!cur) return; A.currentTime = Math.max(0, Math.min((A.duration || 1e9) - 0.1, A.currentTime + d)); }
+function goNeighbour(d){ var id = neighbour(d); if (id) load(id); else if (d < 0) A.currentTime = 0; }
+function saveLast(){ if (cur) jset('tt-last', { id:cur.t.id, pos:A.currentTime }); }
+function markPlayed(){ if (cur && !cur.marked){ cur.marked = true; played[cur.t.id] = 1; jset('tt-played', played); } }
+var lastSave = 0;
+A.addEventListener('play', function(){ S.playing = true; log('play ' + (cur ? cur.t.id : '') + ' @' + A.currentTime.toFixed(1)); syncPlay(); });
+A.addEventListener('playing', function(){
+  if (S.startTarget){
+    var st = S.startTarget, now = Date.now(); S.startTarget = null;
+    log('START: play() called ' + (st.fireAt - st.target) + 'ms after target; sound began ' + (now - st.target) + 'ms after target (trim ' + cfg.trim + 'ms)');
+  }
+});
+A.addEventListener('pause', function(){ S.playing = false; log('pause @' + A.currentTime.toFixed(1)); saveLast(); syncPlay(); });
+A.addEventListener('ended', function(){
+  S.playing = false; S.ended = true; markPlayed(); log('ended ' + (cur ? cur.t.id : '')); saveLast();
+  if (cfg.auto && neighbour(1)) goNeighbour(1); else render();
+});
+A.addEventListener('timeupdate', function(){
+  updProgress();
+  if (cur && !cur.marked && A.duration && A.currentTime / A.duration > 0.9) markPlayed();
+  var n = Date.now(); if (n - lastSave > 4000){ lastSave = n; saveLast(); }
+});
+A.addEventListener('error', function(){ log('audio error ' + (A.error ? A.error.code + ' ' + (A.error.message || '') : '')); });
+A.addEventListener('stalled', function(){ log('stalled'); });
+A.addEventListener('waiting', function(){ if (A.currentTime > 0.5) log('waiting (buffering) @' + A.currentTime.toFixed(1)); });
+document.addEventListener('visibilitychange', function(){
+  log('page ' + document.visibilityState + ' | audio ' + (A.paused ? 'paused' : 'playing') + ' @' + A.currentTime.toFixed(1));
+  if (document.visibilityState === 'visible'){
+    if (cfg.wake) wake();
+    if (!S.busy && Date.now() - S.lastCheck > 600000) checkUpdates(false); else render();
+  }
+});
+window.addEventListener('online', function(){ log('network: online'); if (!S.busy && Date.now() - S.lastCheck > 60000) checkUpdates(false); });
+window.addEventListener('offline', function(){ log('network: offline'); });
+function session(t){
+  if (!('mediaSession' in navigator)) return;
+  var s = S.smap[t.sessionId], l = s ? S.lmap[s.locationId] : null;
+  try { navigator.mediaSession.metadata = new MediaMetadata({ title:t.title, artist:s ? s.title : '', album:'Trip Tours' + (l ? ' · ' + l.title : ''), artwork:[{ src:'icon-512.png', sizes:'512x512', type:'image/png' }] }); } catch(e){}
+  function h(a, f){ try { navigator.mediaSession.setActionHandler(a, f); } catch(e){} }
+  h('play', function(){ A.play(); }); h('pause', function(){ A.pause(); });
+  h('previoustrack', function(){ goNeighbour(-1); }); h('nexttrack', function(){ goNeighbour(1); });
+  h('seekbackward', function(){ skip(-15); }); h('seekforward', function(){ skip(15); });
+  h('seekto', function(d){ if (d && d.seekTime != null) A.currentTime = d.seekTime; });
+}
+
+/* ---------- timed start ("start together") ---------- */
+var actx = null;
+function beepInit(){ try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){} }
+function beep(f, ms){
+  if (!actx) return;
+  try { var o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.value = 0.15; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + ms/1000); } catch(e){}
+}
+function startAt(step){
+  if (!cur){ S.msg = { cls:'err', text:'Choose a track first (tap one in the library).' }; render(); return; }
+  beepInit();
+  var now = Date.now();
+  var target = Math.ceil((now + 6000) / (step * 1000)) * step * 1000;
+  A.pause(); try { A.currentTime = 0; } catch(e){}
+  S.ended = false; S.arm = { target:target, lastBeep:null };
+  if (cfg.wake) wake();
+  log('armed: start at ' + clock(target) + ' (trim ' + cfg.trim + 'ms)');
+  clearInterval(S.armTimer); S.armTimer = setInterval(armTick, 40);
+  render();
+}
+function cancelArm(){ S.arm = null; clearInterval(S.armTimer); log('start cancelled'); render(); }
+function armTick(){
+  var a = S.arm; if (!a){ clearInterval(S.armTimer); return; }
+  var fireTime = a.target - cfg.trim, remT = a.target - Date.now(), sec = Math.ceil(remT / 1000);
+  if (sec <= 3 && sec >= 1 && a.lastBeep !== sec){ a.lastBeep = sec; beep(660, 90); }
+  updArm(remT);
+  if (fireTime - Date.now() <= 60){
+    clearInterval(S.armTimer);
+    (function spin(){
+      if (Date.now() < fireTime){ setTimeout(spin, 0); return; }
+      var fireAt = Date.now(); S.startTarget = { target:a.target, fireAt:fireAt }; S.arm = null;
+      A.play().catch(function(e){ log('play() rejected: ' + e.name); });
+      render();
+    })();
+  }
+}
+function updArm(rem){ var el = $('#cd'); if (el) el.textContent = rem > 0 ? (rem / 1000).toFixed(1) : 'GO'; }
+
+/* ---------- wake lock ---------- */
+var wl = null;
+function wake(){
+  try {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock.request('screen').then(function(l){ wl = l; l.addEventListener('release', function(){ log('screen wake lock released'); }); }).catch(function(e){ log('wake lock failed: ' + e.name); });
+  } catch(e){}
+}
+function releaseWake(){ try { if (wl && !cfg.wake){ wl.release(); wl = null; } } catch(e){} }
+
+/* ---------- views ---------- */
+var ICO = {
+  play:'<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></svg>',
+  pause:'<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4.2" height="15" rx="1"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1"/></svg>',
+  prev:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="2.6" height="14" rx="1"/><path d="M19 5v14L9 12z"/></svg>',
+  next:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="16.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 5v14l10-7z"/></svg>'
+};
+function pp(){ return A.paused ? ICO.play : ICO.pause; }
+function toneChip(x){ return x && x.tone === 'sombre' ? '<span class="chip sombre">sombre</span>' : ''; }
+function msgHTML(){ return S.msg ? '<div class="note ' + (S.msg.cls || '') + '">' + esc(S.msg.text) + '</div>' : ''; }
+function miniHTML(){
+  if (!cur || S.view === 'now') return '';
+  var s = S.smap[cur.t.sessionId];
+  return '<div class="mini" data-act="now"><div><b>' + esc(cur.t.title) + '</b><span class="meta">' + esc(s ? s.title : '') + '</span></div><button class="small" data-act="toggle" id="minibtn" aria-label="Play or pause">' + pp() + '</button></div>';
+}
+function updHTML(){
+  var u = S.upd; if (!u || u.state !== 'ready' || !u.avail) return '';
+  var cell = navigator.connection && (navigator.connection.type === 'cellular' || navigator.connection.saveData);
+  var h = '<div class="upd">';
+  if (u.need.length){
+    var first = !S.cat;
+    h += '<b>' + (first ? 'Library available' : 'Update available') + '</b>' + u.need.length + ' track' + (u.need.length === 1 ? '' : 's') + (u.bytes ? ' to download (' + fmtMB(u.bytes) + ')' : ' to download') + (u.textNew && !first ? ', plus new summaries' : '') + '.';
+    if (cell) h += '<div class="hint">You may be on mobile data.</div>';
+    h += '<div class="row"><button data-act="download">Download</button></div>';
+  } else {
+    h += '<b>Update available</b>New summaries and order. No audio to download.<div class="row"><button data-act="download">Apply</button></div>';
+  }
+  return h + '</div>';
+}
+function homeHTML(){
+  var ver = jget('tt-verify', null), last = jget('tt-last', null);
+  var h = '<h1>Trip Tours</h1><div class="sub">audio guides · v' + VER + '</div>' + msgHTML() + updHTML();
+  var total = allTracks().length, ready = readyCount();
+  h += '<section class="card">';
+  if (S.cat){
+    h += '<div class="big">' + ready + ' of ' + total + ' tracks ready' + (ready ? ' · ' + fmtMB(readyBytes()) : '') + '</div>';
+    h += '<div class="' + (ready === total ? 'ok' : 'hint') + '">' + (ready === total ? '✔ ' : '') + 'Library ' + esc(S.cat.catalogueVersion) + ' · ' + esc(S.fp) + (ready === total ? '' : ' (incomplete)') + '</div>';
+    if (ver && ver.fp === S.fp) h += '<div class="' + (ver.bad.length ? 'bad' : 'ok') + '">' + (ver.bad.length ? '✖' : '✔') + ' verified ' + ver.ok + '/' + ver.total + ' · ' + when(ver.at) + '</div>';
+    if (ver && ver.fp === S.fp && ver.bad.length) h += '<ul class="bad">' + ver.bad.slice(0, 6).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  } else {
+    h += '<div class="big">Library is empty</div><div class="hint">Connect to the internet and tap Check for updates, or import a pack file.</div>';
+  }
+  h += '<div class="row"><button class="alt" data-act="check">Check for updates</button><button class="alt" data-act="verify"' + (ready ? '' : ' disabled') + '>Verify</button></div>';
+  h += '<div class="row"><button class="alt small" data-act="import">Import pack (.zip)</button></div></section>';
+  if (last && S.tmap[last.id] && playable(S.tmap[last.id])){
+    var lt = S.tmap[last.id];
+    h += '<button class="row2" data-act="resume"><span class="rt">Resume: ' + esc(lt.title) + '</span><span class="meta">' + fmt(last.pos) + '</span></button>';
+  }
+  var city = null;
+  S.tree.forEach(function(l){
+    if (l.city !== city){ city = l.city; h += '<h3>' + esc(city || 'Places') + '</h3>'; }
+    var rd = 0, tt = 0; l.sessions.forEach(function(s){ rd += sesReady(s); tt += s.tracks.length; });
+    var done = l.sessions.length && l.sessions.every(sesPlayed);
+    h += '<button class="row2" data-act="loc" data-id="' + esc(l.id) + '"><span class="rt"><b>' + esc(l.title) + '</b>' + (done ? '<span class="chip ok">heard</span>' : '') + (rd < tt ? '<span class="chip warn">' + (tt - rd) + ' to download</span>' : '') + (l.summary ? '<span class="sum">' + esc(l.summary) + '</span>' : '') + '</span><span class="meta">' + l.sessions.length + ' session' + (l.sessions.length === 1 ? '' : 's') + ' · ' + fmt(locDur(l)) + ' ›</span></button>';
+  });
+  h += '<div class="row"><button class="alt small" data-act="tools">Test tools &amp; log</button></div>';
+  return h;
+}
+function locHTML(){
+  var l = S.lmap[S.locId];
+  if (!l) return '<button class="back" data-act="home">‹ Library</button>';
+  var h = '<button class="back" data-act="home">‹ Library</button><h2>' + esc(l.title) + '</h2><div class="sub">' + esc(l.city) + (l.day ? ' · Day ' + esc(l.day) : '') + '</div>';
+  if (l.summary) h += '<p>' + esc(l.summary) + '</p>';
+  h += msgHTML() + '<h3>Sessions</h3>';
+  l.sessions.forEach(function(s){
+    var rd = sesReady(s);
+    h += '<button class="row2" data-act="ses" data-id="' + esc(s.id) + '"><span class="rt"><b>' + esc(s.number) + '. ' + esc(s.title) + '</b>' + toneChip(s) + (sesPlayed(s) ? '<span class="chip ok">heard</span>' : '') + (rd < s.tracks.length ? '<span class="chip warn">' + (s.tracks.length - rd) + ' to download</span>' : '') + (s.summary ? '<span class="sum">' + esc(s.summary) + '</span>' : '') + '</span><span class="meta">' + s.tracks.length + ' · ' + fmt(sesDur(s)) + ' ›</span></button>';
+  });
+  return h;
+}
+function sesHTML(){
+  var s = S.smap[S.sesId], l = s ? S.lmap[s.locationId] : null;
+  if (!s) return '<button class="back" data-act="home">‹ Library</button>';
+  var first = s.tracks.filter(playable)[0];
+  var h = '<button class="back" data-act="loc" data-id="' + esc(l.id) + '">‹ ' + esc(l.title) + '</button><h2>' + esc(s.number) + '. ' + esc(s.title) + '</h2><div class="sub">' + s.tracks.length + ' track' + (s.tracks.length === 1 ? '' : 's') + ' · ' + fmt(sesDur(s)) + toneChip(s) + '</div>' + msgHTML();
+  if (s.summary) h += '<p>' + esc(s.summary) + '</p>';
+  if (s.listenAt) h += '<div class="listen"><b>Listen at:</b> ' + esc(s.listenAt) + '</div>';
+  h += '<div class="row"><button data-act="play"' + (first ? ' data-id="' + esc(first.id) + '"' : ' disabled') + '>Play session</button></div><h3>Tracks</h3>';
+  s.tracks.forEach(function(t){
+    var st = tstate(t);
+    h += '<button class="row2' + (cur && cur.t.id === t.id ? ' cur' : '') + '" data-act="play" data-id="' + esc(t.id) + '"' + (st === 'missing' ? ' disabled' : '') + '><span class="rt"><b>' + esc(t.number) + '. ' + esc(t.title) + '</b>' + (played[t.id] ? '<span class="chip ok">heard</span>' : '') + (st === 'missing' ? '<span class="chip warn">not downloaded</span>' : '') + (st === 'stale' ? '<span class="chip">update pending</span>' : '') + (t.summary ? '<span class="sum">' + esc(t.summary) + '</span>' : '') + '</span><span class="meta">' + fmt(t.dur) + '</span></button>';
+  });
+  return h;
+}
+function nowHTML(){
+  if (!cur) return '<button class="back" data-act="home">‹ Library</button><div class="note">Nothing loaded yet.</div>';
+  var t = cur.t, s = S.smap[t.sessionId], idx = s ? s.tracks.map(function(x){ return x.id; }).indexOf(t.id) : 0;
+  var h = '<button class="back" data-act="ses" data-id="' + esc(t.sessionId) + '">‹ ' + esc(s ? s.title : 'Back') + '</button>';
+  h += '<h2>' + esc(t.title) + '</h2><div class="sub">Track ' + (idx + 1) + ' of ' + (s ? s.tracks.length : 1) + toneChip(s) + '</div>';
+  if (t.summary) h += '<p class="hint" style="font-size:14px">' + esc(t.summary) + '</p>';
+  h += msgHTML();
+  if (S.arm) h += '<div class="banner">Starting together at ' + clock(S.arm.target).slice(0, 8) + '<div class="cd" id="cd">…</div><button class="alt small" data-act="cancelarm" style="margin-top:8px">Cancel</button></div>';
+  if (S.ended && !S.playing){
+    h += '<div class="fin"><b>' + (neighbour(1) ? 'Track finished.' : 'Session finished.') + '</b><br>' + (neighbour(1) ? 'Tap Next when everyone is ready.' : 'That was the last track here.') + '</div>';
+  }
+  h += '<input type="range" id="seek" min="0" max="1000" value="0"><div class="time"><span id="tcur">0:00</span><span id="tdur">' + fmt(t.dur) + '</span></div>';
+  h += '<div class="ctl"><button class="alt" data-act="prev" aria-label="Previous track">' + ICO.prev + '</button><button class="alt" data-act="back15">−15</button><button class="play" data-act="toggle" id="playbtn" aria-label="Play or pause">' + pp() + '</button><button class="alt" data-act="fwd15">+15</button><button' + (neighbour(1) ? '' : ' disabled') + ' data-act="next" aria-label="Next track">' + ICO.next + '</button></div>';
+  h += '<div class="row"><button class="alt small" data-act="speed">Speed ' + cfg.speed + '×</button><button class="alt small" data-act="auto">Auto-continue: ' + (cfg.auto ? 'on' : 'off') + '</button></div>';
+  h += '<div class="row"><button class="alt" data-act="start30">Start together (next :00 / :30)</button></div>';
+  if (s && (s.summary || s.listenAt)) h += '<details><summary>About this session</summary>' + (s.summary ? '<p>' + esc(s.summary) + '</p>' : '') + (s.listenAt ? '<div class="listen"><b>Listen at:</b> ' + esc(s.listenAt) + '</div>' : '') + '</details>';
+  h += '<h3>All tracks</h3>';
+  if (s) s.tracks.forEach(function(x){
+    h += '<button class="row2' + (x.id === t.id ? ' cur' : '') + '" data-act="play" data-id="' + esc(x.id) + '"' + (playable(x) ? '' : ' disabled') + '><span class="rt">' + esc(x.number) + '. ' + esc(x.title) + '</span><span class="meta">' + fmt(x.dur) + '</span></button>';
+  });
+  return h;
+}
+function toolsHTML(){
+  var st = S.storage, u = S.upd;
+  var h = '<button class="back" data-act="home">‹ Library</button><h2>Test tools</h2>' + msgHTML();
+  h += '<section class="card"><div class="big">Library content address</div><div class="hint">Where this phone looks for catalogue.json. The default works when the audio site is called trip-tours-audio.</div><div style="margin-top:8px"><input type="text" id="baseinp" value="' + esc(cfg.base) + '" placeholder="' + esc(contentBase()) + '" autocapitalize="off" autocomplete="off" spellcheck="false"></div>';
+  h += '<div class="hint" style="margin-top:6px">Using: ' + esc(contentBase()) + '</div>';
+  h += '<div class="hint">Last check: ' + (u ? (u.state === 'ready' ? 'ok, catalogue ' + esc(u.man.catalogueVersion) + ' at ' + when(u.at) : 'failed (' + esc(u.msg) + ')') : 'not yet') + '</div>';
+  h += '<div class="row"><button class="alt small" data-act="savebase">Save address</button><button class="alt small" data-act="check">Check now</button></div></section>';
+  h += '<section class="card"><div class="hint">Phone clock — photograph all four phones in one shot to compare</div><div class="clock" id="clock">--:--:--.---</div></section>';
+  h += '<section class="card"><div class="big">Start-together tuning</div><div class="hint">Each phone starts sound a little late after play(). Trim starts this phone earlier by this many ms so all phones line up.</div>';
+  h += '<div class="big" style="margin-top:10px">Trim: <span id="trimv">' + cfg.trim + ' ms</span></div><div class="row" style="margin-top:6px"><button class="alt small" data-act="trim" data-d="-50">−50</button><button class="alt small" data-act="trim" data-d="-10">−10</button><button class="alt small" data-act="trim" data-d="10">+10</button><button class="alt small" data-act="trim" data-d="50">+50</button></div>';
+  h += '<div class="row"><button class="alt small" data-act="start30">Start track at next :00 / :30</button></div>';
+  if (cur) h += '<div class="hint" style="margin-top:6px">Track: ' + esc(cur.t.title) + '</div>';
+  if (S.arm) h += '<div class="banner">Starting at ' + clock(S.arm.target).slice(0, 8) + '<div class="cd" id="cd">…</div></div>';
+  h += '</section>';
+  h += '<section class="card"><div class="tog" style="margin-top:0"><span>Keep screen on while playing</span><button class="alt small" data-act="wake">' + (cfg.wake ? 'On' : 'Off') + '</button></div>';
+  h += '<div class="hint" style="margin-top:10px">Storage: ' + (st ? fmtMB(st.usage) + ' used of ' + fmtMB(st.quota) + ' · persistent: ' + (st.persisted ? 'yes' : 'no') : 'checking…') + '</div>';
+  h += '<div class="hint">Network: ' + (navigator.onLine ? 'online' : 'offline') + ' · installed app: ' + (matchMedia('(display-mode: standalone)').matches ? 'yes' : 'no (browser tab)') + '</div></section>';
+  h += '<section class="card"><div class="big">Log</div><pre class="log" id="logbox">' + esc(logbuf.slice(-80).join('\n')) + '</pre><div class="row"><button class="alt small" data-act="copylog">Copy log</button><button class="alt small" data-act="clearlog">Clear log</button></div></section>';
+  h += '<section class="card"><div class="big">Library</div><div class="hint">Removes every downloaded track and the catalogue from this phone.</div><div class="row"><button class="alt small" data-act="clear">' + (S.confirmClear ? 'Tap again to delete everything' : 'Delete library') + '</button></div></section>';
+  return h;
+}
+function busyHTML(){
+  var b = S.busy, frac = b.totalBytes ? b.bytes / b.totalBytes : (b.total ? b.n / b.total : 0);
+  return '<div class="overlay"><div class="card"><div class="big">' + esc(b.msg) + '</div><div class="hint" id="busytxt">' + esc(busyText()) + '</div><div class="bar"><i id="busybar" style="width:' + Math.min(100, 100 * frac) + '%"></i></div><div class="hint" style="margin-top:10px">Keep this screen open.</div>' + (b.cancellable ? '<div class="row"><button class="alt small" data-act="cancel">Pause</button></div>' : '') + '</div></div>';
+}
+function render(){
+  var h = '', v = S.view;
+  if (v === 'home') h = homeHTML(); else if (v === 'loc') h = locHTML(); else if (v === 'ses') h = sesHTML(); else if (v === 'now') h = nowHTML(); else if (v === 'tools') h = toolsHTML();
+  h += miniHTML();
+  if (S.busy) h += busyHTML();
+  app.innerHTML = h;
+  updProgress();
+  if (v === 'tools'){ storageInfo(); var tok = ++S.clockTok; (function loop(){ if (S.clockTok !== tok || S.view !== 'tools') return; var c = $('#clock'); if (c) c.textContent = clock(Date.now()); requestAnimationFrame(loop); })(); var lb = $('#logbox'); if (lb) lb.scrollTop = lb.scrollHeight; }
+  if (S.arm) updArm(S.arm.target - Date.now());
+}
+function syncPlay(){
+  var b = $('#playbtn'); if (b) b.innerHTML = pp();
+  var m = $('#minibtn'); if (m) m.innerHTML = pp();
+  if (S.playing && S.ended){ S.ended = false; if (S.view === 'now') render(); }
+}
+var dragging = false;
+function updProgress(){
+  var d = A.duration || (cur && cur.t.dur) || 0;
+  var tc = $('#tcur'); if (tc) tc.textContent = fmt(A.currentTime);
+  var td = $('#tdur'); if (td && A.duration) td.textContent = fmt(A.duration);
+  var sk = $('#seek'); if (sk && !dragging && d) sk.value = Math.round(1000 * A.currentTime / d);
+}
+function storageInfo(){
+  if (!(navigator.storage && navigator.storage.estimate)){ S.storage = { usage:0, quota:0, persisted:false }; return; }
+  Promise.all([navigator.storage.estimate(), navigator.storage.persisted ? navigator.storage.persisted() : false]).then(function(r){
+    var fresh = !S.storage; S.storage = { usage:r[0].usage || 0, quota:r[0].quota || 0, persisted:r[1] };
+    if (fresh && S.view === 'tools') render();
+  });
+}
+
+/* ---------- events ---------- */
+app.addEventListener('input', function(e){
+  if (e.target.id === 'seek'){ dragging = true; var d = A.duration || (cur && cur.t.dur) || 0; var tc = $('#tcur'); if (tc) tc.textContent = fmt(d * e.target.value / 1000); }
+});
+app.addEventListener('change', function(e){
+  if (e.target.id === 'seek'){ var d = A.duration || (cur && cur.t.dur) || 0; A.currentTime = d * e.target.value / 1000; dragging = false; }
+});
+app.addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]'); if (!el) return;
+  if (el.dataset.act === 'toggle' && el.closest('.mini')) e.stopPropagation();
+  var act = el.dataset.act, id = el.dataset.id;
+  if (act === 'import'){ pick.value = ''; pick.click(); }
+  else if (act === 'verify') verifyAll();
+  else if (act === 'check') checkUpdates(true);
+  else if (act === 'download') download();
+  else if (act === 'cancel'){ S.cancel = true; log('pause requested'); }
+  else if (act === 'loc'){ S.view = 'loc'; S.locId = id; S.msg = null; render(); }
+  else if (act === 'ses'){ S.view = 'ses'; S.sesId = id; S.msg = null; render(); }
+  else if (act === 'home'){ S.view = 'home'; S.msg = null; render(); }
+  else if (act === 'tools'){ S.view = 'tools'; S.msg = null; S.confirmClear = false; render(); }
+  else if (act === 'now'){ S.view = 'now'; render(); }
+  else if (act === 'play'){ if (!id) return; S.view = 'now'; S.msg = null; load(id); }
+  else if (act === 'resume'){ var l = jget('tt-last', null); if (l){ S.view = 'now'; load(l.id, { pos:l.pos }); } }
+  else if (act === 'toggle') toggle();
+  else if (act === 'prev') goNeighbour(-1);
+  else if (act === 'next') goNeighbour(1);
+  else if (act === 'back15') skip(-15);
+  else if (act === 'fwd15') skip(15);
+  else if (act === 'speed'){ var sp = [0.9, 1, 1.15, 1.3]; cfg.speed = sp[(sp.indexOf(cfg.speed) + 1) % sp.length]; A.defaultPlaybackRate = cfg.speed; A.playbackRate = cfg.speed; saveCfg(); render(); }
+  else if (act === 'auto'){ cfg.auto = !cfg.auto; saveCfg(); render(); }
+  else if (act === 'start30') startAt(30);
+  else if (act === 'cancelarm') cancelArm();
+  else if (act === 'trim'){ cfg.trim = Math.max(-1000, Math.min(1000, cfg.trim + Number(el.dataset.d))); saveCfg(); var tv = $('#trimv'); if (tv) tv.textContent = cfg.trim + ' ms'; }
+  else if (act === 'savebase'){ var bi = $('#baseinp'); cfg.base = bi ? bi.value.trim() : ''; saveCfg(); S.upd = null; S.msg = { cls:'good', text:'Address saved.' }; log('content address: ' + contentBase()); render(); }
+  else if (act === 'wake'){ cfg.wake = !cfg.wake; saveCfg(); if (cfg.wake) wake(); else if (wl){ wl.release(); wl = null; } render(); }
+  else if (act === 'copylog'){
+    var txt = logbuf.join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ S.msg = { cls:'good', text:'Log copied. Paste it into a chat.' }; render(); }, function(){ var r = document.createRange(); r.selectNodeContents($('#logbox')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); S.msg = { text:'Log selected. Long-press to copy.' }; });
+  }
+  else if (act === 'clearlog'){ logbuf = []; jset('tt-log', []); var lb = $('#logbox'); if (lb) lb.textContent = ''; }
+  else if (act === 'clear'){
+    if (!S.confirmClear){ S.confirmClear = true; render(); return; }
+    S.confirmClear = false; A.pause(); cur = null; A.removeAttribute('src');
+    idbClearAll().then(refreshState).then(function(){ ['tt-verify','tt-last','tt-played'].forEach(function(k){ localStorage.removeItem(k); }); played = {}; S.upd = null; log('library deleted'); S.msg = { text:'Library deleted.' }; S.view = 'home'; render(); });
+  }
+});
+pick.addEventListener('change', function(){ var f = pick.files && pick.files[0]; if (f) importZip(f); });
+
+/* ---------- start ---------- */
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(function(){ log('app cached for offline use'); }, function(e){ log('service worker failed: ' + e.message); });
+}
+log('app opened v' + VER + (matchMedia('(display-mode: standalone)').matches ? ' (installed)' : ' (browser tab)') + ' · ' + navigator.userAgent.replace(/^Mozilla\/5.0 /, '').slice(0, 90));
+render();
+refreshState().then(function(){ render(); if (navigator.onLine) return checkUpdates(false); })
+  .catch(function(e){ S.msg = { cls:'err', text:'Storage problem: ' + e.message }; render(); });
+window.__tt = { S:S, A:A, cfg:cfg, load:load, checkUpdates:checkUpdates };
+})();
+</script>
+</body>
+</html>
