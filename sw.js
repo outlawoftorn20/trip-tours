@@ -1,10 +1,10 @@
 'use strict';
-/* Trip Tours service worker (v0.3).
+/* Trip Tours service worker (v0.4).
    Keeps only the app shell (page, manifest, icons) so the app opens offline.
    Audio and catalogue.json are never handled here: they live in a different folder
    (../trip-tours-audio/) and in IndexedDB, so nothing big ever lands in Cache Storage.
    The shell is fetched network-first, so a new index.html is picked up as soon as the phone is online. */
-var CACHE = 'trip-tours-shell-v3';
+var CACHE = 'trip-tours-shell-v4';
 var SCOPE = new URL(self.registration.scope).pathname;            // e.g. /trip-tours/
 var SHELL = ['', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'].map(function (p) { return SCOPE + p; });
 
